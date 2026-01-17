@@ -10,6 +10,8 @@ import doctorRouter from './routes/doctor.routes.js';
 import blogrouter from './routes/blog.routes.js';
 import galleryRouter from './routes/gallery.routes.js';
 import videoRouter from './routes/video.routes.js';
+import freeConsultationRouter from './routes/freeConsultation.routes.js';
+import enquiryRouter from './routes/enquiry.routes.js';
 dotenv.config()
 
 const app = express()
@@ -34,6 +36,8 @@ app.use('/doctor',doctorRouter)
 app.use('/blog',blogrouter)
 app.use('/gallery',galleryRouter)
 app.use('/video',videoRouter)
+app.use('/free-consultation',freeConsultationRouter)
+app.use('/enquiry',enquiryRouter)
 
 
 // 404 handler
