@@ -74,39 +74,64 @@ export const createHospital = async (req, res) => {
   }
 };
 
-/* =========================
-   GET ALL (SEARCH + FILTER + PAGINATION)
-========================= */
 export const getAllHospitals = async (req, res) => {
   try {
-    const { search, city, speciality, accreditation, isActive, page = 1, limit = 1000000000 } = req.query;
+    const {
+      search,
+      city,
+      speciality,
+      accreditation,
+      isActive,
+      page = 1,
+      limit = 10
+    } = req.query;
 
     const query = {};
 
-    if (search) {
-      query.name = { $regex: search, $options: "i" };
+    // 🔎 GLOBAL SEARCH (single search box)
+    if (search && search.trim() !== "") {
+      query.$or = [
+        { name: { $regex: search, $options: "i" } },
+        { city: { $regex: search, $options: "i" } },
+        { about: { $regex: search, $options: "i" } },
+        { description: { $regex: search, $options: "i" } },
+
+        { specialities: { $regex: search, $options: "i" } },
+        { accreditations: { $regex: search, $options: "i" } },
+        { departments: { $regex: search, $options: "i" } },
+        { infrastructure: { $regex: search, $options: "i" } },
+        { whyChoose: { $regex: search, $options: "i" } },
+        { internationalServices: { $regex: search, $options: "i" } }
+      ];
     }
 
+    // 🏙️ City filter
     if (city && city !== "All") {
       query.city = city;
     }
 
+    // 🏥 Speciality filter
     if (speciality && speciality !== "All") {
       query.specialities = { $in: [speciality] };
     }
 
+    // 🏅 Accreditation filter
     if (accreditation && accreditation !== "All") {
       query.accreditations = { $in: [accreditation] };
     }
 
+    // 🟢 Active / Inactive filter
     if (isActive !== undefined) {
       query.isActive = isActive === "true";
     }
 
+    // 📄 Pagination
     const skip = (Number(page) - 1) * Number(limit);
 
+    // 🔢 Total
     const total = await Hospital.countDocuments(query);
 
+    // 📦 Data
     const hospitals = await Hospital.find(query)
       .sort({ createdAt: -1 })
       .skip(skip)
@@ -127,6 +152,7 @@ export const getAllHospitals = async (req, res) => {
     });
   }
 };
+
 
 /* =========================
    GET SINGLE
@@ -269,6 +295,24 @@ export const deleteHospital = async (req, res) => {
     return res.status(200).json({
       success: true,
       message: "Hospital deleted successfully"
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error"
+    });
+  }
+};
+
+// GET /api/hospitals/dropdown
+export const getHospitalsForDropdown = async (req, res) => {
+  try {
+    const hospitals = await Hospital.find({ isActive: true })
+      .select("name city accreditations");
+
+    return res.status(200).json({
+      success: true,
+      hospitals
     });
   } catch (error) {
     return res.status(500).json({

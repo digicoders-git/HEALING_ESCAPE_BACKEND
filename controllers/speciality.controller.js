@@ -85,18 +85,31 @@ export const getAllSpecialities = async (req, res) => {
 
     const query = {};
 
-    if (search) {
-      query.title = { $regex: search, $options: "i" };
+    // 🔎 Global search in multiple fields
+    if (search && search.trim() !== "") {
+      query.$or = [
+        { title: { $regex: search, $options: "i" } },
+        { description: { $regex: search, $options: "i" } },
+        { whatIs: { $regex: search, $options: "i" } },
+        { procedure: { $regex: search, $options: "i" } },
+        { recovery: { $regex: search, $options: "i" } },
+        { costRange: { $regex: search, $options: "i" } },
+        { whenRecommended: { $regex: search, $options: "i" } } // array search
+      ];
     }
 
+    // ✅ Active / Inactive filter
     if (isActive !== undefined) {
       query.isActive = isActive === "true";
     }
 
+    // 📄 Pagination
     const skip = (Number(page) - 1) * Number(limit);
 
+    // 🔢 Total count
     const total = await Speciality.countDocuments(query);
 
+    // 📦 Data
     const specialities = await Speciality.find(query)
       .sort({ createdAt: -1 })
       .skip(skip)
@@ -117,6 +130,7 @@ export const getAllSpecialities = async (req, res) => {
     });
   }
 };
+
 
 /* =========================
    GET SINGLE

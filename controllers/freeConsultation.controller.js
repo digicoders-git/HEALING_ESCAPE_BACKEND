@@ -49,24 +49,22 @@ export const createFreeConsultation = async (req, res) => {
 ========================= */
 export const getAllFreeConsultations = async (req, res) => {
   try {
-    const { page = 1, limit = 10, search, country, city } = req.query;
+    const { page = 1, limit = 100090000, search } = req.query;
 
     const skip = (Number(page) - 1) * Number(limit);
 
     let query = {};
 
-    // 🔍 Search
-    if (search) {
+    // 🔍 GLOBAL SEARCH
+    if (search && search.trim() !== "") {
       query.$or = [
         { fullName: { $regex: search, $options: "i" } },
+        { country: { $regex: search, $options: "i" } },
+        { city: { $regex: search, $options: "i" } },
         { mobile: { $regex: search, $options: "i" } },
         { clinicalRequirement: { $regex: search, $options: "i" } }
       ];
     }
-
-    // 🌍 Filter
-    if (country) query.country = country;
-    if (city) query.city = city;
 
     const total = await FreeConsultation.countDocuments(query);
 
@@ -91,6 +89,7 @@ export const getAllFreeConsultations = async (req, res) => {
     });
   }
 };
+
 
 /* =========================
    UPDATE

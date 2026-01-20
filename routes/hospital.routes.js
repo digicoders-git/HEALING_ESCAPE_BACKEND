@@ -6,7 +6,8 @@ import {
   getSingleHospital,
   updateHospital,
   deleteHospital,
-  toggleHospitalStatus
+  toggleHospitalStatus,
+  getHospitalsForDropdown
 } from "../controllers/hospital.controller.js";
 import { verifyAdminToken } from "../middleware/verifyAdminToken.js";
 
@@ -18,5 +19,6 @@ hospitalRouter.get("/:id", getSingleHospital);
 hospitalRouter.put("/update/:id",verifyAdminToken, upload.single("image"), updateHospital);
 hospitalRouter.patch("/status/:id",verifyAdminToken, toggleHospitalStatus);
 hospitalRouter.delete("/delete/:id",verifyAdminToken, deleteHospital);
+hospitalRouter.get("/dropdown/list", getHospitalsForDropdown);
 
 export default hospitalRouter;

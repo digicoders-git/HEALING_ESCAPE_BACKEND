@@ -6,12 +6,14 @@ import {
   getSingleDoctor,
   updateDoctor,
   deleteDoctor,
-  toggleDoctorStatus
+  toggleDoctorStatus,
+  getDoctorSpecialitiesDropdown
 } from "../controllers/doctor.controller.js";
 import { verifyAdminToken } from "../middleware/verifyAdminToken.js";
 
 const doctorRouter = express.Router();
 
+doctorRouter.get("/specialities/dropdown", getDoctorSpecialitiesDropdown);
 doctorRouter.post("/create",verifyAdminToken, upload.single("photo"), createDoctor);
 doctorRouter.get("/all", getAllDoctors);
 doctorRouter.get("/:id", getSingleDoctor);

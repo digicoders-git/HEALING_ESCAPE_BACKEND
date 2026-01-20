@@ -50,25 +50,23 @@ export const createEnquiry = async (req, res) => {
 ========================= */
 export const getAllEnquiries = async (req, res) => {
   try {
-    const { page = 1, limit = 10, search, country, preferredCity } = req.query;
+    const { page = 1, limit = 10, search } = req.query;
 
     const skip = (Number(page) - 1) * Number(limit);
 
     let query = {};
 
-    // 🔍 Search
-    if (search) {
+    // 🔍 GLOBAL SEARCH
+    if (search && search.trim() !== "") {
       query.$or = [
         { fullName: { $regex: search, $options: "i" } },
+        { country: { $regex: search, $options: "i" } },
         { email: { $regex: search, $options: "i" } },
         { phone: { $regex: search, $options: "i" } },
+        { preferredCity: { $regex: search, $options: "i" } },
         { message: { $regex: search, $options: "i" } }
       ];
     }
-
-    // 🌍 Filters
-    if (country) query.country = country;
-    if (preferredCity) query.preferredCity = preferredCity;
 
     const total = await Enquiry.countDocuments(query);
 
@@ -93,6 +91,7 @@ export const getAllEnquiries = async (req, res) => {
     });
   }
 };
+
 
 /* =========================
    GET SINGLE ENQUIRY

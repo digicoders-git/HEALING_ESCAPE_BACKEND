@@ -78,39 +78,57 @@ export const createDoctor = async (req, res) => {
   }
 };
 
-/* =========================
-   GET ALL (SEARCH + FILTER + PAGINATION)
-========================= */
 export const getAllDoctors = async (req, res) => {
   try {
-    const { search, speciality, hospital, city, isActive, page = 1, limit = 1000000000 } = req.query;
+    const {
+      search,
+      speciality,
+      city,
+      hospital,
+      isActive,
+      page = 1,
+      limit = 1000000
+    } = req.query;
 
     const query = {};
 
-    if (search) {
-      query.name = { $regex: search, $options: "i" };
+    // 🔎 GLOBAL SEARCH (single box)
+    if (search && search.trim() !== "") {
+      query.$or = [
+        { name: { $regex: search, $options: "i" } },
+        { speciality: { $regex: search, $options: "i" } },
+        { "hospital.name": { $regex: search, $options: "i" } },
+        { "hospital.city": { $regex: search, $options: "i" } }
+      ];
     }
 
+    // 🧠 Speciality dropdown filter
     if (speciality && speciality !== "All") {
       query.speciality = speciality;
     }
 
-    if (hospital) {
-      query["hospital.name"] = { $regex: hospital, $options: "i" };
-    }
-
-    if (city) {
+    // 🏙️ City filter (optional)
+    if (city && city !== "All") {
       query["hospital.city"] = city;
     }
 
+    // 🏥 Hospital filter (optional)
+    if (hospital && hospital !== "All") {
+      query["hospital.name"] = hospital;
+    }
+
+    // 🟢 Active / Inactive
     if (isActive !== undefined) {
       query.isActive = isActive === "true";
     }
 
+    // 📄 Pagination
     const skip = (Number(page) - 1) * Number(limit);
 
+    // 🔢 Total
     const total = await Doctor.countDocuments(query);
 
+    // 📦 Data
     const doctors = await Doctor.find(query)
       .sort({ createdAt: -1 })
       .skip(skip)
@@ -131,6 +149,7 @@ export const getAllDoctors = async (req, res) => {
     });
   }
 };
+
 
 /* =========================
    GET SINGLE
@@ -284,6 +303,27 @@ export const deleteDoctor = async (req, res) => {
       message: "Doctor deleted successfully"
     });
   } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error"
+    });
+  }
+};
+
+
+/* =========================
+   GET SPECIALITIES FOR DOCTOR DROPDOWN
+========================= */
+export const getDoctorSpecialitiesDropdown = async (req, res) => {
+  try {
+    const specialities = await Doctor.distinct("speciality", { isActive: true });
+
+    return res.status(200).json({
+      success: true,
+      specialities
+    });
+  } catch (error) {
+    console.error("Get doctor specialities dropdown error:", error);
     return res.status(500).json({
       success: false,
       message: "Internal server error"
