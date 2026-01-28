@@ -158,7 +158,9 @@ export const updateFreeConsultation = async (req, res) => {
       "city",
       "countryCode",
       "mobile",
-      "clinicalRequirement"
+      "clinicalRequirement",
+      "leadStatus",
+      "negativeReason"
     ];
 
     fields.forEach((field) => {

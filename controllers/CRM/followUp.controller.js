@@ -9,7 +9,7 @@ export const addFollowUp = async (req, res) => {
   try {
     const { leadId, employeeId, note, nextFollowUpDate } = req.body;
 
-    if (!leadId || !employeeId || !note || !nextFollowUpDate) {
+    if (!leadId || !employeeId || !note) {
       return res.status(400).json({
         success: false,
         message: "All fields are required"
@@ -61,21 +61,23 @@ export const addFollowUp = async (req, res) => {
 
 
 /* =========================
-   GET MY FOLLOW-UPS (Today + Overdue)
+   GET MY FOLLOW-UPS (With Server Side Filtering)
 ========================= */
 export const getMyFollowUps = async (req, res) => {
   try {
     const { employeeId } = req.params;
+    const { status } = req.query;
 
-    const today = new Date();
+    let query = { employee: employeeId };
 
-    const followups = await FollowUp.find({
-      employee: employeeId,
-      nextFollowUpDate: { $lte: today },
-      status: "pending"
-    })
-      .populate("lead", "fullName mobile city")
-      .sort({ nextFollowUpDate: 1 });
+    // Server side filtering by status
+    if (status && status !== "all") {
+      query.status = status;
+    }
+
+    const followups = await FollowUp.find(query)
+      .populate("lead", "fullName mobile city clinicalRequirement leadStatus")
+      .sort({ createdAt: -1 });
 
     return res.status(200).json({
       success: true,
@@ -84,6 +86,39 @@ export const getMyFollowUps = async (req, res) => {
     });
   } catch (error) {
     console.error("Get My FollowUps Error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Server Error"
+    });
+  }
+};
+
+/* =========================
+   GET ALL FOLLOW-UPS (Admin - With Server Side Filtering)
+========================= */
+export const getAllFollowUps = async (req, res) => {
+  try {
+    const { status } = req.query;
+
+    let query = {};
+
+    // Server side filtering by status
+    if (status && status !== "all") {
+      query.status = status;
+    }
+
+    const followups = await FollowUp.find(query)
+      .populate("lead", "fullName mobile city clinicalRequirement leadStatus")
+      .populate("employee", "name phone")
+      .sort({ createdAt: -1 });
+
+    return res.status(200).json({
+      success: true,
+      total: followups.length,
+      data: followups
+    });
+  } catch (error) {
+    console.error("Get All FollowUps Error:", error);
     return res.status(500).json({
       success: false,
       message: "Server Error"
@@ -176,7 +211,7 @@ export const getUpcomingFollowUps = async (req, res) => {
       nextFollowUpDate: { $gt: today },
       status: "pending"
     })
-      .populate("lead", "fullName mobile city")
+      .populate("lead", "fullName mobile city clinicalRequirement leadStatus")
       .sort({ nextFollowUpDate: 1 });
 
     return res.status(200).json({
@@ -186,6 +221,80 @@ export const getUpcomingFollowUps = async (req, res) => {
     });
   } catch (error) {
     console.error("Get Upcoming FollowUps Error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Server Error"
+    });
+  }
+};
+
+export const getTodaysReminders = async (req, res) => {
+  try {
+    const { employeeId } = req.params;
+
+    const startOfDay = new Date();
+    startOfDay.setHours(0, 0, 0, 0);
+
+    const endOfDay = new Date();
+    endOfDay.setHours(23, 59, 59, 999);
+
+    const followups = await FollowUp.find({
+      employee: employeeId,
+      nextFollowUpDate: {
+        $gte: startOfDay,
+        $lte: endOfDay
+      },
+      status: "pending"
+    })
+      .populate("lead", "fullName mobile city clinicalRequirement leadStatus")
+      .sort({ createdAt: -1 });
+
+    return res.status(200).json({
+      success: true,
+      total: followups.length,
+      data: followups
+    });
+  } catch (error) {
+    console.error("Get Todays Reminders Error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Server Error"
+    });
+  }
+};
+
+export const getMonthFollowUps = async (req, res) => {
+  try {
+    const { employeeId } = req.params;
+    const { month, year } = req.query; // Expecting month (0-11) and year (e.g., 2026)
+
+    if (!month || !year) {
+      return res.status(400).json({
+        success: false,
+        message: "Month and Year are required"
+      });
+    }
+
+    const startOfMonth = new Date(year, month, 1);
+    const endOfMonth = new Date(year, parseInt(month) + 1, 0, 23, 59, 59, 999);
+
+    const followups = await FollowUp.find({
+      employee: employeeId,
+      nextFollowUpDate: {
+        $gte: startOfMonth,
+        $lte: endOfMonth
+      }
+    })
+      .populate("lead", "fullName mobile city clinicalRequirement leadStatus")
+      .sort({ nextFollowUpDate: 1 });
+
+    return res.status(200).json({
+      success: true,
+      total: followups.length,
+      data: followups
+    });
+  } catch (error) {
+    console.error("Get Month FollowUps Error:", error);
     return res.status(500).json({
       success: false,
       message: "Server Error"

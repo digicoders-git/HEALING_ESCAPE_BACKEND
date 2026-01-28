@@ -21,7 +21,7 @@ const followUpSchema = new mongoose.Schema(
 
     nextFollowUpDate: {
       type: Date,
-      required: true
+      required: false
     },
 
     status: {

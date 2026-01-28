@@ -47,6 +47,10 @@ const freeConsultationSchema = new mongoose.Schema(
       type: String,
       enum: ["new", "contacted", "in-progress", "converted", "closed", "negative"],
       default: "new"
+    },
+    negativeReason: {
+      type: String,
+      default: ""
     }
 
 
