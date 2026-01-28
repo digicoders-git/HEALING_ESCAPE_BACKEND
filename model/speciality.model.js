@@ -2,13 +2,6 @@ import mongoose from "mongoose";
 
 const specialitySchema = new mongoose.Schema(
   {
-    title: {
-      type: String,
-      required: true,
-      trim: true,
-      unique: true
-    },
-
     image: {
       type: String,
       required: true
@@ -19,34 +12,14 @@ const specialitySchema = new mongoose.Schema(
       required: true
     },
 
+    title: {
+      type: String,
+      required: true,
+      trim: true,
+      unique: true
+    },
+
     description: {
-      type: String,
-      required: true
-    },
-
-    whatIs: {
-      type: String,
-      required: true
-    },
-
-    whenRecommended: [
-      {
-        type: String,
-        required: true
-      }
-    ],
-
-    procedure: {
-      type: String,
-      required: true
-    },
-
-    recovery: {
-      type: String,
-      required: true
-    },
-
-    costRange: {
       type: String,
       required: true
     },

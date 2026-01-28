@@ -1,4 +1,5 @@
 import FreeConsultation from "../model/freeConsultation.model.js";
+import FollowUp from "../model/CRM/followUp.model.js";
 
 /* =========================
    CREATE
@@ -21,13 +22,23 @@ export const createFreeConsultation = async (req, res) => {
       });
     }
 
+    // 🔥 AUTO DETECT SOURCE
+    // Agar token valid hai aur admin middleware laga hai => admin
+    // Warna => web
+    let source = "web";
+
+    if (req.admin || req.user?.role === "admin") {
+      source = "admin";
+    }
+
     const data = await FreeConsultation.create({
       fullName,
       country,
       city,
       countryCode: countryCode || "+91",
       mobile,
-      clinicalRequirement
+      clinicalRequirement,
+      source
     });
 
     return res.status(201).json({
@@ -44,31 +55,65 @@ export const createFreeConsultation = async (req, res) => {
   }
 };
 
+
 /* =========================
    GET ALL
 ========================= */
 export const getAllFreeConsultations = async (req, res) => {
   try {
-    const { page = 1, limit = 100090000, search } = req.query;
+    const {
+      page = 1,
+      limit = 1009090909090909,
+      search,
+      source,
+      country,
+      city,
+      leadStatus,
+      assignedTo
+    } = req.query;
 
     const skip = (Number(page) - 1) * Number(limit);
 
     let query = {};
 
-    // 🔍 GLOBAL SEARCH
+    // 🎯 Exact Filters
+    if (source && ["web", "admin", "employee"].includes(source)) {
+      query.source = source;
+    }
+
+    if (leadStatus && ["new", "contacted", "in-progress", "converted", "closed"].includes(leadStatus)) {
+      query.leadStatus = leadStatus;
+    }
+
+    if (assignedTo && mongoose.Types.ObjectId.isValid(assignedTo)) {
+      query.assignedTo = assignedTo;
+    }
+
+    if (country) {
+      query.country = { $regex: country, $options: "i" };
+    }
+
+    if (city) {
+      query.city = { $regex: city, $options: "i" };
+    }
+
+    // 🔍 Global Search (almost all useful fields)
     if (search && search.trim() !== "") {
       query.$or = [
         { fullName: { $regex: search, $options: "i" } },
         { country: { $regex: search, $options: "i" } },
         { city: { $regex: search, $options: "i" } },
         { mobile: { $regex: search, $options: "i" } },
-        { clinicalRequirement: { $regex: search, $options: "i" } }
+        { clinicalRequirement: { $regex: search, $options: "i" } },
+        { source: { $regex: search, $options: "i" } },
+        { leadStatus: { $regex: search, $options: "i" } }
       ];
     }
 
     const total = await FreeConsultation.countDocuments(query);
 
     const data = await FreeConsultation.find(query)
+      .populate("assignedTo", "name phone department")
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(Number(limit));
@@ -89,6 +134,8 @@ export const getAllFreeConsultations = async (req, res) => {
     });
   }
 };
+
+
 
 
 /* =========================
@@ -168,9 +215,12 @@ export const deleteFreeConsultation = async (req, res) => {
 /* =========================
    GET SINGLE
 ========================= */
+import mongoose from "mongoose";
+
 export const getSingleFreeConsultation = async (req, res) => {
   try {
-    const data = await FreeConsultation.findById(req.params.id);
+    const data = await FreeConsultation.findById(req.params.id)
+      .populate("assignedTo", "name phone department");
 
     if (!data) {
       return res.status(404).json({
@@ -179,9 +229,20 @@ export const getSingleFreeConsultation = async (req, res) => {
       });
     }
 
+    // ✅ Get all followups of this lead
+    const followUps = await FollowUp.find({ lead: data._id })
+      .populate("employee", "name phone")
+      .sort({ createdAt: -1 });
+
+    const totalFollowUps = followUps.length;
+
+    const obj = data.toObject();
+    obj.totalFollowUps = totalFollowUps;
+    obj.followUps = followUps;   // 🔥 FULL LIST ADDED
+
     return res.status(200).json({
       success: true,
-      data
+      data: obj   // ✅ SAME RESPONSE SHAPE, JUST ONE EXTRA FIELD
     });
   } catch (error) {
     console.error("Get Single FreeConsultation Error:", error);
@@ -191,3 +252,4 @@ export const getSingleFreeConsultation = async (req, res) => {
     });
   }
 };
+

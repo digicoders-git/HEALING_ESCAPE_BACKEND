@@ -31,7 +31,25 @@ const freeConsultationSchema = new mongoose.Schema(
     clinicalRequirement: {
       type: String,
       required: true
+    },
+    source: {
+      type: String,
+      enum: ["web", "admin", "employee"],
+      default: "web"
+    },
+    assignedTo: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Employee",
+      default: null
+    },
+
+    leadStatus: {
+      type: String,
+      enum: ["new", "contacted", "in-progress", "converted", "closed", "negative"],
+      default: "new"
     }
+
+
   },
   { timestamps: true }
 );

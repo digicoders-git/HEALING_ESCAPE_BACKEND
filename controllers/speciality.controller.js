@@ -6,35 +6,12 @@ import cloudinary from "../config/cloudinary.js";
 ========================= */
 export const createSpeciality = async (req, res) => {
   try {
-    const {
-      title,
-      description,
-      whatIs,
-      whenRecommended,
-      procedure,
-      recovery,
-      costRange
-    } = req.body;
+    const { title, description } = req.body;
 
-    if (
-      !title ||
-      !description ||
-      !whatIs ||
-      !procedure ||
-      !recovery ||
-      !costRange
-    ) {
+    if (!title || !description) {
       return res.status(400).json({
         success: false,
-        message: "All fields are required"
-      });
-    }
-
-    const exist = await Speciality.findOne({ title });
-    if (exist) {
-      return res.status(400).json({
-        success: false,
-        message: "Speciality already exists"
+        message: "Title and description are required"
       });
     }
 
@@ -45,72 +22,61 @@ export const createSpeciality = async (req, res) => {
       });
     }
 
-    // ⬆️ Upload to cloudinary
+    // Upload image to cloudinary
     const upload = await cloudinary.uploader.upload(req.file.path, {
       folder: "specialities"
     });
 
     const speciality = await Speciality.create({
       title,
-      image: upload.secure_url,
-      imagePublicId: upload.public_id,
       description,
-      whatIs,
-      whenRecommended: JSON.parse(whenRecommended),
-      procedure,
-      recovery,
-      costRange
+      image: upload.secure_url,
+      imagePublicId: upload.public_id
     });
 
     return res.status(201).json({
       success: true,
       message: "Speciality created successfully",
-      speciality
+      data: speciality
     });
+
   } catch (error) {
-    console.error("Create speciality error:", error);
+    console.error("Create Speciality Error:", error);
     return res.status(500).json({
       success: false,
-      message: "Internal server error"
+      message: "Server Error",
+      error: error.message
     });
   }
 };
 
 /* =========================
-   GET ALL (SEARCH + FILTER + PAGINATION)
+   GET ALL (Search + Filter + Pagination)
 ========================= */
 export const getAllSpecialities = async (req, res) => {
   try {
-    const { search, isActive, page = 1, limit = 10 } = req.query;
+    const { page = 1, limit = 109090090900, search, isActive } = req.query;
 
-    const query = {};
+    const skip = (Number(page) - 1) * Number(limit);
 
-    // 🔎 Global search in multiple fields
-    if (search && search.trim() !== "") {
+    let query = {};
+
+    // 🔍 Global Search
+    if (search) {
       query.$or = [
         { title: { $regex: search, $options: "i" } },
-        { description: { $regex: search, $options: "i" } },
-        { whatIs: { $regex: search, $options: "i" } },
-        { procedure: { $regex: search, $options: "i" } },
-        { recovery: { $regex: search, $options: "i" } },
-        { costRange: { $regex: search, $options: "i" } },
-        { whenRecommended: { $regex: search, $options: "i" } } // array search
+        { description: { $regex: search, $options: "i" } }
       ];
     }
 
-    // ✅ Active / Inactive filter
+    // 🎯 Filter
     if (isActive !== undefined) {
       query.isActive = isActive === "true";
     }
 
-    // 📄 Pagination
-    const skip = (Number(page) - 1) * Number(limit);
-
-    // 🔢 Total count
     const total = await Speciality.countDocuments(query);
 
-    // 📦 Data
-    const specialities = await Speciality.find(query)
+    const data = await Speciality.find(query)
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(Number(limit));
@@ -119,18 +85,18 @@ export const getAllSpecialities = async (req, res) => {
       success: true,
       total,
       page: Number(page),
-      limit: Number(limit),
-      specialities
+      pages: Math.ceil(total / limit),
+      data
     });
+
   } catch (error) {
-    console.error("Get specialities error:", error);
+    console.error("Get All Specialities Error:", error);
     return res.status(500).json({
       success: false,
-      message: "Internal server error"
+      message: "Server Error"
     });
   }
 };
-
 
 /* =========================
    GET SINGLE
@@ -148,12 +114,13 @@ export const getSingleSpeciality = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      speciality
+      data: speciality
     });
+
   } catch (error) {
     return res.status(500).json({
       success: false,
-      message: "Invalid ID"
+      message: "Server Error"
     });
   }
 };
@@ -163,6 +130,8 @@ export const getSingleSpeciality = async (req, res) => {
 ========================= */
 export const updateSpeciality = async (req, res) => {
   try {
+    const { title, description, isActive } = req.body;
+
     const speciality = await Speciality.findById(req.params.id);
 
     if (!speciality) {
@@ -172,34 +141,14 @@ export const updateSpeciality = async (req, res) => {
       });
     }
 
-    const fields = [
-      "title",
-      "description",
-      "whatIs",
-      "procedure",
-      "recovery",
-      "costRange",
-      "isActive"
-    ];
-
-    fields.forEach((field) => {
-      if (req.body[field] !== undefined) {
-        speciality[field] = req.body[field];
-      }
-    });
-
-    if (req.body.whenRecommended) {
-      speciality.whenRecommended = JSON.parse(req.body.whenRecommended);
-    }
-
-    // 🔁 If new image uploaded
+    // 🖼️ If new image uploaded
     if (req.file) {
-      // 🔥 Delete old image
+      // delete old image
       if (speciality.imagePublicId) {
         await cloudinary.uploader.destroy(speciality.imagePublicId);
       }
 
-      // ⬆️ Upload new
+      // upload new
       const upload = await cloudinary.uploader.upload(req.file.path, {
         folder: "specialities"
       });
@@ -208,48 +157,23 @@ export const updateSpeciality = async (req, res) => {
       speciality.imagePublicId = upload.public_id;
     }
 
+    if (title) speciality.title = title;
+    if (description) speciality.description = description;
+    if (isActive !== undefined) speciality.isActive = isActive;
+
     await speciality.save();
 
     return res.status(200).json({
       success: true,
       message: "Speciality updated successfully",
-      speciality
+      data: speciality
     });
+
   } catch (error) {
-    console.error("Update speciality error:", error);
+    console.error("Update Speciality Error:", error);
     return res.status(500).json({
       success: false,
-      message: "Internal server error"
-    });
-  }
-};
-
-/* =========================
-   TOGGLE STATUS
-========================= */
-export const toggleSpecialityStatus = async (req, res) => {
-  try {
-    const speciality = await Speciality.findById(req.params.id);
-
-    if (!speciality) {
-      return res.status(404).json({
-        success: false,
-        message: "Speciality not found"
-      });
-    }
-
-    speciality.isActive = !speciality.isActive;
-    await speciality.save();
-
-    return res.status(200).json({
-      success: true,
-      message: `Speciality ${speciality.isActive ? "Activated" : "Deactivated"}`,
-      isActive: speciality.isActive
-    });
-  } catch (error) {
-    return res.status(500).json({
-      success: false,
-      message: "Internal server error"
+      message: "Server Error"
     });
   }
 };
@@ -268,13 +192,9 @@ export const deleteSpeciality = async (req, res) => {
       });
     }
 
-    // 🔥 Delete image from cloudinary
+    // Delete image from cloudinary
     if (speciality.imagePublicId) {
-      try {
-        await cloudinary.uploader.destroy(speciality.imagePublicId);
-      } catch (err) {
-        console.error("Cloudinary delete failed:", err.message);
-      }
+      await cloudinary.uploader.destroy(speciality.imagePublicId);
     }
 
     await speciality.deleteOne();
@@ -283,10 +203,45 @@ export const deleteSpeciality = async (req, res) => {
       success: true,
       message: "Speciality deleted successfully"
     });
+
   } catch (error) {
     return res.status(500).json({
       success: false,
-      message: "Internal server error"
+      message: "Server Error"
+    });
+  }
+};
+/* =========================
+   TOGGLE SPECIALITY STATUS
+========================= */
+export const toggleSpecialityStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const speciality = await Speciality.findById(id);
+
+    if (!speciality) {
+      return res.status(404).json({
+        success: false,
+        message: "Speciality not found"
+      });
+    }
+
+    // 🔁 Toggle
+    speciality.isActive = !speciality.isActive;
+    await speciality.save();
+
+    return res.status(200).json({
+      success: true,
+      message: `Speciality ${speciality.isActive ? "Activated" : "Deactivated"} successfully`,
+      data: speciality
+    });
+
+  } catch (error) {
+    console.error("Toggle Speciality Status Error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Server Error"
     });
   }
 };

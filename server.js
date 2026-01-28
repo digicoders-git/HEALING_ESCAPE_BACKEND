@@ -12,6 +12,11 @@ import galleryRouter from './routes/gallery.routes.js';
 import videoRouter from './routes/video.routes.js';
 import freeConsultationRouter from './routes/freeConsultation.routes.js';
 import enquiryRouter from './routes/enquiry.routes.js';
+import employeeRouter from './routes/CRM/employee.routes.js';
+import leadAssignRoute from './routes/CRM/leadAssign.routes.js';
+import followUpRouter from './routes/CRM/followUp.routes.js';
+import employeeDashboardRouter from './routes/CRM/employeeDashboard.routes.js';
+import employeeAuthRouter from './routes/employee_CRM/employeeAuth.routes.js';
 dotenv.config()
 
 const app = express()
@@ -39,6 +44,11 @@ app.use('/video',videoRouter)
 app.use('/free-consultation',freeConsultationRouter)
 app.use('/enquiry',enquiryRouter)
 
+app.use('/employee',employeeRouter)
+app.use('/lead',leadAssignRoute)
+app.use('/followup',followUpRouter)
+app.use('/employee',employeeDashboardRouter)
+app.use('/employeeCRM',employeeAuthRouter)
 
 // 404 handler
 app.use((req, res) =>

@@ -20,22 +20,15 @@ export const createDoctor = async (req, res) => {
       whyChoose
     } = req.body;
 
-    if (
-      !name ||
-      !speciality ||
-      !qualification ||
-      !designation ||
-      !experience ||
-      !hospital ||
-      !summary ||
-      !about
-    ) {
+    // ✅ Only these 3 fields required from body
+    if (!name || !speciality || !experience) {
       return res.status(400).json({
         success: false,
-        message: "All required fields must be provided"
+        message: "Doctor name, speciality and experience are required"
       });
     }
 
+    // ✅ Photo required
     if (!req.file) {
       return res.status(400).json({
         success: false,
@@ -53,15 +46,15 @@ export const createDoctor = async (req, res) => {
       photo: upload.secure_url,
       photoPublicId: upload.public_id,
       speciality,
-      qualification,
-      designation,
+      qualification: qualification || "",
+      designation: designation || "",
       experience: Number(experience),
-      hospital: JSON.parse(hospital),
-      summary,
-      about,
-      expertise: JSON.parse(expertise),
-      procedures: JSON.parse(procedures),
-      whyChoose: JSON.parse(whyChoose)
+      hospital: hospital ? JSON.parse(hospital) : [],
+      summary: summary || "",
+      about: about || "",
+      expertise: expertise ? JSON.parse(expertise) : [],
+      procedures: procedures ? JSON.parse(procedures) : [],
+      whyChoose: whyChoose ? JSON.parse(whyChoose) : []
     });
 
     return res.status(201).json({

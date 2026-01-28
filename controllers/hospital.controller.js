@@ -19,7 +19,7 @@ export const createHospital = async (req, res) => {
       internationalServices
     } = req.body;
 
-    if (!name || !city || !about || !description) {
+    if (!name || !city ) {
       return res.status(400).json({
         success: false,
         message: "Required fields missing"
