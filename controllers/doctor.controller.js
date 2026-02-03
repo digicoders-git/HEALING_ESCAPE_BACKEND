@@ -66,7 +66,7 @@ export const createDoctor = async (req, res) => {
     console.error("Create doctor error:", error);
     return res.status(500).json({
       success: false,
-      message: "Internal server error"
+      message: error.message || "Internal server error"
     });
   }
 };
@@ -231,7 +231,7 @@ export const updateDoctor = async (req, res) => {
     console.error("Update doctor error:", error);
     return res.status(500).json({
       success: false,
-      message: "Internal server error"
+      message: error.message || "Internal server error"
     });
   }
 };
