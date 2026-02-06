@@ -35,6 +35,10 @@ app.use(express.urlencoded({ extended: true }));
 
 await connectDB();
 
+// app.get('/', (req, res) => {
+//   res.status(200).json({message:"APIs is running successfully , You are genious! "})
+// })
+
 app.use('/admin', adminRoute)
 app.use('/speciality', specialityRouter)
 app.use('/hospital', hospitalRouter)
@@ -48,7 +52,7 @@ app.use('/enquiry', enquiryRouter)
 app.use('/employee', employeeRouter)
 app.use('/lead', leadAssignRoute)
 app.use('/followup', followUpRouter)
-app.use('/employee', employeeDashboardRouter)
+// app.use('/employee', employeeDashboardRouter)
 app.use('/employeeCRM', employeeAuthRouter)
 
 // 404 handler
