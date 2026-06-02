@@ -18,6 +18,7 @@ import leadAssignRoute from './routes/CRM/leadAssign.routes.js';
 import followUpRouter from './routes/CRM/followUp.routes.js';
 import employeeDashboardRouter from './routes/CRM/employeeDashboard.routes.js';
 import employeeAuthRouter from './routes/employee_CRM/employeeAuth.routes.js';
+import careerRouter from './routes/career.routes.js';
 dotenv.config()
 
 const app = express()
@@ -48,6 +49,7 @@ app.use('/gallery', galleryRouter)
 app.use('/video', videoRouter)
 app.use('/free-consultation', freeConsultationRouter)
 app.use('/enquiry', enquiryRouter)
+app.use('/career', careerRouter)
 
 app.use('/employee', employeeRouter)
 app.use('/lead', leadAssignRoute)
