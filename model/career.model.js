@@ -108,6 +108,11 @@ const careerSchema = new mongoose.Schema(
       trim: true,
       default: "",
     },
+    whyJoin: {
+      type: String,
+      trim: true,
+      default: "",
+    },
   },
   { timestamps: true }
 );

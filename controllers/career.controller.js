@@ -29,6 +29,7 @@ export const createCareer = async (req, res) => {
       organizationName,
       designation,
       partnershipType,
+      whyJoin,
     } = req.body;
 
     if (!formType) {
@@ -89,6 +90,7 @@ export const createCareer = async (req, res) => {
       organizationName: organizationName || "",
       designation: designation || "",
       partnershipType: partnershipType || "",
+      whyJoin: whyJoin || "",
     };
 
     const newCareer = await Career.create(careerData);
