@@ -27,7 +27,8 @@ export const getFilePublicId = (file) => {
 export const getFileUrl = (req, file) => {
   if (!file) return "";
   const relativePath = getFilePublicId(file);
-  const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get("host")}`;
+  const rawBase = process.env.BASE_URL || `${req.protocol}://${req.get("host")}`;
+  const baseUrl = rawBase.replace(/\/+$/, "");
   return `${baseUrl}/uploads/${relativePath}`;
 };
 

@@ -22,6 +22,7 @@ import careerRouter from './routes/career.routes.js';
 dotenv.config()
 
 const app = express()
+app.set('trust proxy', true);
 const port = process.env.PORT || 3000
 app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" }
