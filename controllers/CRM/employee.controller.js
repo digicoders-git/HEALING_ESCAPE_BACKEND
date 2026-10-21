@@ -1,4 +1,4 @@
-import cloudinary from "../../config/cloudinary.js";
+import { getFileUrl, getFilePublicId, deleteUploadedFile } from "../../utils/fileUpload.js";
 import Employee from "../../model/CRM/employee.model.js";
 import freeConsultationModel from "../../model/freeConsultation.model.js";
 
@@ -46,13 +46,9 @@ export const createEmployee = async (req, res) => {
     let profilePhoto = { url: "", public_id: "" };
 
     if (req.file) {
-      const upload = await cloudinary.uploader.upload(req.file.path, {
-        folder: "employees"
-      });
-
       profilePhoto = {
-        url: upload.secure_url,
-        public_id: upload.public_id
+        url: getFileUrl(req, req.file),
+        public_id: getFilePublicId(req.file)
       };
     }
 
@@ -235,18 +231,14 @@ export const updateEmployee = async (req, res) => {
     // If new image uploaded
     if (req.file) {
       // Delete old image
-      if (employee.profilePhoto?.public_id) {
-        await cloudinary.uploader.destroy(employee.profilePhoto.public_id);
+      if (employee.profilePhoto?.public_id || employee.profilePhoto?.url) {
+        deleteUploadedFile(employee.profilePhoto.public_id || employee.profilePhoto.url);
       }
 
-      // Upload new
-      const upload = await cloudinary.uploader.upload(req.file.path, {
-        folder: "employees"
-      });
-
+      // Save new image info
       employee.profilePhoto = {
-        url: upload.secure_url,
-        public_id: upload.public_id
+        url: getFileUrl(req, req.file),
+        public_id: getFilePublicId(req.file)
       };
     }
 
@@ -280,9 +272,9 @@ export const deleteEmployee = async (req, res) => {
       });
     }
 
-    // Delete image from cloudinary
-    if (employee.profilePhoto?.public_id) {
-      await cloudinary.uploader.destroy(employee.profilePhoto.public_id);
+    // Delete image from uploads
+    if (employee.profilePhoto?.public_id || employee.profilePhoto?.url) {
+      deleteUploadedFile(employee.profilePhoto.public_id || employee.profilePhoto.url);
     }
 
     await employee.deleteOne();

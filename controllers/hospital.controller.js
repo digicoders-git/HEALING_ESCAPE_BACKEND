@@ -1,5 +1,5 @@
 import Hospital from "../model/hospital.model.js";
-import cloudinary from "../config/cloudinary.js";
+import { getFileUrl, getFilePublicId, deleteUploadedFile } from "../utils/fileUpload.js";
 
 /* =========================
    CREATE HOSPITAL
@@ -41,15 +41,11 @@ export const createHospital = async (req, res) => {
       });
     }
 
-    const upload = await cloudinary.uploader.upload(req.file.path, {
-      folder: "hospitals"
-    });
-
     const hospital = await Hospital.create({
       name,
       city,
-      image: upload.secure_url,
-      imagePublicId: upload.public_id,
+      image: getFileUrl(req, req.file),
+      imagePublicId: getFilePublicId(req.file),
       accreditations: JSON.parse(accreditations),
       specialities: JSON.parse(specialities),
       about,
@@ -210,16 +206,12 @@ export const updateHospital = async (req, res) => {
 
     // 🔁 Image update
     if (req.file) {
-      if (hospital.imagePublicId) {
-        await cloudinary.uploader.destroy(hospital.imagePublicId);
+      if (hospital.imagePublicId || hospital.image) {
+        deleteUploadedFile(hospital.imagePublicId || hospital.image);
       }
 
-      const upload = await cloudinary.uploader.upload(req.file.path, {
-        folder: "hospitals"
-      });
-
-      hospital.image = upload.secure_url;
-      hospital.imagePublicId = upload.public_id;
+      hospital.image = getFileUrl(req, req.file);
+      hospital.imagePublicId = getFilePublicId(req.file);
     }
 
     await hospital.save();
@@ -282,12 +274,8 @@ export const deleteHospital = async (req, res) => {
       });
     }
 
-    if (hospital.imagePublicId) {
-      try {
-        await cloudinary.uploader.destroy(hospital.imagePublicId);
-      } catch (err) {
-        console.error("Cloudinary delete failed:", err.message);
-      }
+    if (hospital.imagePublicId || hospital.image) {
+      deleteUploadedFile(hospital.imagePublicId || hospital.image);
     }
 
     await hospital.deleteOne();

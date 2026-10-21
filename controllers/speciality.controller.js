@@ -1,5 +1,5 @@
 import Speciality from "../model/speciality.model.js";
-import cloudinary from "../config/cloudinary.js";
+import { getFileUrl, getFilePublicId, deleteUploadedFile } from "../utils/fileUpload.js";
 
 /* =========================
    CREATE SPECIALITY
@@ -22,16 +22,11 @@ export const createSpeciality = async (req, res) => {
       });
     }
 
-    // Upload image to cloudinary
-    const upload = await cloudinary.uploader.upload(req.file.path, {
-      folder: "specialities"
-    });
-
     const speciality = await Speciality.create({
       title,
       description,
-      image: upload.secure_url,
-      imagePublicId: upload.public_id
+      image: getFileUrl(req, req.file),
+      imagePublicId: getFilePublicId(req.file)
     });
 
     return res.status(201).json({
@@ -144,17 +139,12 @@ export const updateSpeciality = async (req, res) => {
     // 🖼️ If new image uploaded
     if (req.file) {
       // delete old image
-      if (speciality.imagePublicId) {
-        await cloudinary.uploader.destroy(speciality.imagePublicId);
+      if (speciality.imagePublicId || speciality.image) {
+        deleteUploadedFile(speciality.imagePublicId || speciality.image);
       }
 
-      // upload new
-      const upload = await cloudinary.uploader.upload(req.file.path, {
-        folder: "specialities"
-      });
-
-      speciality.image = upload.secure_url;
-      speciality.imagePublicId = upload.public_id;
+      speciality.image = getFileUrl(req, req.file);
+      speciality.imagePublicId = getFilePublicId(req.file);
     }
 
     if (title) speciality.title = title;
@@ -192,9 +182,9 @@ export const deleteSpeciality = async (req, res) => {
       });
     }
 
-    // Delete image from cloudinary
-    if (speciality.imagePublicId) {
-      await cloudinary.uploader.destroy(speciality.imagePublicId);
+    // Delete image from uploads
+    if (speciality.imagePublicId || speciality.image) {
+      deleteUploadedFile(speciality.imagePublicId || speciality.image);
     }
 
     await speciality.deleteOne();

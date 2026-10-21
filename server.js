@@ -23,7 +23,9 @@ dotenv.config()
 
 const app = express()
 const port = process.env.PORT || 3000
-app.use(helmet());
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: "cross-origin" }
+}));
 app.use(
   cors({
     origin: true,
@@ -33,6 +35,9 @@ app.use(
 // Body parsers
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+
+// Serve uploaded files statically
+app.use('/uploads', express.static('uploads'));
 
 await connectDB();
 

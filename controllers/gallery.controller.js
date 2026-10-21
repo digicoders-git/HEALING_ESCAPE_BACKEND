@@ -1,5 +1,5 @@
 import Gallery from "../model/gallery.model.js";
-import cloudinary from "../config/cloudinary.js";
+import { getFileUrl, getFilePublicId, deleteUploadedFile } from "../utils/fileUpload.js";
 
 /* =========================
    CREATE GALLERY
@@ -22,15 +22,11 @@ export const createGallery = async (req, res) => {
       });
     }
 
-    const upload = await cloudinary.uploader.upload(req.file.path, {
-      folder: "gallery"
-    });
-
     const gallery = await Gallery.create({
       category,
       caption,
-      image: upload.secure_url,
-      imagePublicId: upload.public_id
+      image: getFileUrl(req, req.file),
+      imagePublicId: getFilePublicId(req.file)
     });
 
     return res.status(201).json({
@@ -143,16 +139,12 @@ export const updateGallery = async (req, res) => {
     // 🔁 If new image uploaded
     if (req.file) {
       // 🔥 Delete old image
-      if (gallery.imagePublicId) {
-        await cloudinary.uploader.destroy(gallery.imagePublicId);
+      if (gallery.imagePublicId || gallery.image) {
+        deleteUploadedFile(gallery.imagePublicId || gallery.image);
       }
 
-      const upload = await cloudinary.uploader.upload(req.file.path, {
-        folder: "gallery"
-      });
-
-      gallery.image = upload.secure_url;
-      gallery.imagePublicId = upload.public_id;
+      gallery.image = getFileUrl(req, req.file);
+      gallery.imagePublicId = getFilePublicId(req.file);
     }
 
     await gallery.save();
@@ -215,13 +207,9 @@ export const deleteGallery = async (req, res) => {
       });
     }
 
-    // 🔥 Delete from cloudinary
-    if (gallery.imagePublicId) {
-      try {
-        await cloudinary.uploader.destroy(gallery.imagePublicId);
-      } catch (err) {
-        console.error("Cloudinary delete failed:", err.message);
-      }
+    // 🔥 Delete from uploads
+    if (gallery.imagePublicId || gallery.image) {
+      deleteUploadedFile(gallery.imagePublicId || gallery.image);
     }
 
     await gallery.deleteOne();

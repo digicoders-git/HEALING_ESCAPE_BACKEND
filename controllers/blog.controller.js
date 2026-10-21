@@ -1,5 +1,5 @@
 import Blog from "../model/blog.model.js";
-import cloudinary from "../config/cloudinary.js";
+import { getFileUrl, getFilePublicId, deleteUploadedFile } from "../utils/fileUpload.js";
 
 /* =========================
    CREATE BLOG
@@ -39,17 +39,12 @@ export const createBlog = async (req, res) => {
       });
     }
 
-    // ⬆️ Upload image
-    const upload = await cloudinary.uploader.upload(req.file.path, {
-      folder: "blogs"
-    });
-
     const blog = await Blog.create({
       title,
       category,
       date,
-      image: upload.secure_url,
-      imagePublicId: upload.public_id,
+      image: getFileUrl(req, req.file),
+      imagePublicId: getFilePublicId(req.file),
       excerpt,
       introduction,
       content,
@@ -180,16 +175,12 @@ export const updateBlog = async (req, res) => {
 
     // 🔁 Image update
     if (req.file) {
-      if (blog.imagePublicId) {
-        await cloudinary.uploader.destroy(blog.imagePublicId);
+      if (blog.imagePublicId || blog.image) {
+        deleteUploadedFile(blog.imagePublicId || blog.image);
       }
 
-      const upload = await cloudinary.uploader.upload(req.file.path, {
-        folder: "blogs"
-      });
-
-      blog.image = upload.secure_url;
-      blog.imagePublicId = upload.public_id;
+      blog.image = getFileUrl(req, req.file);
+      blog.imagePublicId = getFilePublicId(req.file);
     }
 
     await blog.save();
@@ -252,13 +243,9 @@ export const deleteBlog = async (req, res) => {
       });
     }
 
-    // 🔥 Delete image from cloudinary
-    if (blog.imagePublicId) {
-      try {
-        await cloudinary.uploader.destroy(blog.imagePublicId);
-      } catch (err) {
-        console.error("Cloudinary delete failed:", err.message);
-      }
+    // 🔥 Delete image from uploads
+    if (blog.imagePublicId || blog.image) {
+      deleteUploadedFile(blog.imagePublicId || blog.image);
     }
 
     await blog.deleteOne();

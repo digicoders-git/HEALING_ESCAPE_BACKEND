@@ -1,5 +1,5 @@
 import Video from "../model/video.model.js";
-import cloudinary from "../config/cloudinary.js";
+import { getFileUrl, getFilePublicId, deleteUploadedFile } from "../utils/fileUpload.js";
 
 /* =========================
    CREATE VIDEO
@@ -34,31 +34,14 @@ export const createVideo = async (req, res) => {
       });
     }
 
-    // ⬆️ Upload thumbnail
-    const thumbUpload = await cloudinary.uploader.upload(
-      req.files.thumbnail[0].path,
-      {
-        folder: "videos/thumbnails"
-      }
-    );
-
-    // ⬆️ Upload video
-    const videoUpload = await cloudinary.uploader.upload(
-      req.files.video[0].path,
-      {
-        folder: "videos/files",
-        resource_type: "video"
-      }
-    );
-
     const video = await Video.create({
       title,
       category,
-      thumbnail: thumbUpload.secure_url,
-      thumbnailPublicId: thumbUpload.public_id,
+      thumbnail: getFileUrl(req, req.files.thumbnail[0]),
+      thumbnailPublicId: getFilePublicId(req.files.thumbnail[0]),
 
-      videoUrl: videoUpload.secure_url,
-      videoPublicId: videoUpload.public_id,
+      videoUrl: getFileUrl(req, req.files.video[0]),
+      videoPublicId: getFilePublicId(req.files.video[0]),
 
       duration,
       description,
@@ -188,37 +171,22 @@ export const updateVideo = async (req, res) => {
 
     // 🔁 Update thumbnail
     if (req.files?.thumbnail) {
-      if (video.thumbnailPublicId) {
-        await cloudinary.uploader.destroy(video.thumbnailPublicId);
+      if (video.thumbnailPublicId || video.thumbnail) {
+        deleteUploadedFile(video.thumbnailPublicId || video.thumbnail);
       }
 
-      const thumbUpload = await cloudinary.uploader.upload(
-        req.files.thumbnail[0].path,
-        { folder: "videos/thumbnails" }
-      );
-
-      video.thumbnail = thumbUpload.secure_url;
-      video.thumbnailPublicId = thumbUpload.public_id;
+      video.thumbnail = getFileUrl(req, req.files.thumbnail[0]);
+      video.thumbnailPublicId = getFilePublicId(req.files.thumbnail[0]);
     }
 
     // 🔁 Update video file
     if (req.files?.video) {
-      if (video.videoPublicId) {
-        await cloudinary.uploader.destroy(video.videoPublicId, {
-          resource_type: "video"
-        });
+      if (video.videoPublicId || video.videoUrl) {
+        deleteUploadedFile(video.videoPublicId || video.videoUrl);
       }
 
-      const videoUpload = await cloudinary.uploader.upload(
-        req.files.video[0].path,
-        {
-          folder: "videos/files",
-          resource_type: "video"
-        }
-      );
-
-      video.videoUrl = videoUpload.secure_url;
-      video.videoPublicId = videoUpload.public_id;
+      video.videoUrl = getFileUrl(req, req.files.video[0]);
+      video.videoPublicId = getFilePublicId(req.files.video[0]);
     }
 
     await video.save();
@@ -283,15 +251,13 @@ export const deleteVideo = async (req, res) => {
     }
 
     // 🔥 Delete thumbnail
-    if (video.thumbnailPublicId) {
-      await cloudinary.uploader.destroy(video.thumbnailPublicId);
+    if (video.thumbnailPublicId || video.thumbnail) {
+      deleteUploadedFile(video.thumbnailPublicId || video.thumbnail);
     }
 
     // 🔥 Delete video file
-    if (video.videoPublicId) {
-      await cloudinary.uploader.destroy(video.videoPublicId, {
-        resource_type: "video"
-      });
+    if (video.videoPublicId || video.videoUrl) {
+      deleteUploadedFile(video.videoPublicId || video.videoUrl);
     }
 
     await video.deleteOne();

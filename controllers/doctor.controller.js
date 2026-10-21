@@ -1,5 +1,5 @@
 import Doctor from "../model/doctor.model.js";
-import cloudinary from "../config/cloudinary.js";
+import { getFileUrl, getFilePublicId, deleteUploadedFile } from "../utils/fileUpload.js";
 
 /* =========================
    CREATE DOCTOR
@@ -36,15 +36,10 @@ export const createDoctor = async (req, res) => {
       });
     }
 
-    // ⬆️ Upload to cloudinary
-    const upload = await cloudinary.uploader.upload(req.file.path, {
-      folder: "doctors"
-    });
-
     const doctor = await Doctor.create({
       name,
-      photo: upload.secure_url,
-      photoPublicId: upload.public_id,
+      photo: getFileUrl(req, req.file),
+      photoPublicId: getFilePublicId(req.file),
       speciality,
       qualification: qualification || "",
       designation: designation || "",
@@ -208,16 +203,12 @@ export const updateDoctor = async (req, res) => {
 
     // 🔁 Photo update
     if (req.file) {
-      if (doctor.photoPublicId) {
-        await cloudinary.uploader.destroy(doctor.photoPublicId);
+      if (doctor.photoPublicId || doctor.photo) {
+        deleteUploadedFile(doctor.photoPublicId || doctor.photo);
       }
 
-      const upload = await cloudinary.uploader.upload(req.file.path, {
-        folder: "doctors"
-      });
-
-      doctor.photo = upload.secure_url;
-      doctor.photoPublicId = upload.public_id;
+      doctor.photo = getFileUrl(req, req.file);
+      doctor.photoPublicId = getFilePublicId(req.file);
     }
 
     await doctor.save();
@@ -280,13 +271,9 @@ export const deleteDoctor = async (req, res) => {
       });
     }
 
-    // 🔥 Delete photo from cloudinary
-    if (doctor.photoPublicId) {
-      try {
-        await cloudinary.uploader.destroy(doctor.photoPublicId);
-      } catch (err) {
-        console.error("Cloudinary delete failed:", err.message);
-      }
+    // 🔥 Delete photo from uploads
+    if (doctor.photoPublicId || doctor.photo) {
+      deleteUploadedFile(doctor.photoPublicId || doctor.photo);
     }
 
     await doctor.deleteOne();

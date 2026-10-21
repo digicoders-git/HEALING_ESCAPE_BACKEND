@@ -1,7 +1,7 @@
 import generateToken from "../config/token.js"
 import Admin from "../model/admin.models.js"
 import bcrypt from 'bcryptjs'
-import cloudinary from '../config/cloudinary.js'
+import { getFileUrl, deleteUploadedFile } from '../utils/fileUpload.js'
 
 
 export const create = async (req, res) => {
@@ -17,10 +17,7 @@ export const create = async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10)
     let profilePhotoUrl = "";
     if (req.file) {
-      const img = await cloudinary.uploader.upload(req.file.path, {
-        folder: "admin_profiles"
-      })
-      profilePhotoUrl = img.secure_url;
+      profilePhotoUrl = getFileUrl(req, req.file);
     }
 
     const admin = await Admin.create({
@@ -111,10 +108,10 @@ export const updateAdmin = async (req, res) => {
 
     // Update profile photo if provided
     if (req.file) {
-      const img = await cloudinary.uploader.upload(req.file.path, {
-        folder: "admin_profiles"
-      });
-      admin.profilePhoto = img.secure_url;
+      if (admin.profilePhoto) {
+        deleteUploadedFile(admin.profilePhoto);
+      }
+      admin.profilePhoto = getFileUrl(req, req.file);
     }
 
     await admin.save();

@@ -1,5 +1,5 @@
 import Career from "../model/career.model.js";
-import cloudinary from "../config/cloudinary.js";
+import { getFileUrl, getFilePublicId, deleteUploadedFile } from "../utils/fileUpload.js";
 
 /* =========================
    CREATE CAREER APPLICATION
@@ -42,22 +42,10 @@ export const createCareer = async (req, res) => {
     let fileUrl = "";
     let filePublicId = "";
 
-    // If file is uploaded, upload to cloudinary
+    // If file is uploaded, set local URL and publicId
     if (req.file) {
-      try {
-        const uploadResult = await cloudinary.uploader.upload(req.file.path, {
-          folder: "careers",
-          resource_type: "auto",
-        });
-        fileUrl = uploadResult.secure_url;
-        filePublicId = uploadResult.public_id;
-      } catch (uploadError) {
-        console.error("Cloudinary upload failed:", uploadError);
-        return res.status(500).json({
-          success: false,
-          message: "Failed to upload CV/Document to cloud storage",
-        });
-      }
+      fileUrl = getFileUrl(req, req.file);
+      filePublicId = getFilePublicId(req.file);
     }
 
     // Construct education object if applicable
@@ -204,13 +192,9 @@ export const deleteCareer = async (req, res) => {
       });
     }
 
-    // Delete file from Cloudinary if it exists
-    if (data.filePublicId) {
-      try {
-        await cloudinary.uploader.destroy(data.filePublicId);
-      } catch (err) {
-        console.error("Failed to delete file from Cloudinary:", err.message);
-      }
+    // Delete file from uploads if it exists
+    if (data.filePublicId || data.fileUrl) {
+      deleteUploadedFile(data.filePublicId || data.fileUrl);
     }
 
     await data.deleteOne();
